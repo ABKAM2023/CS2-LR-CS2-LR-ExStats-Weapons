@@ -1,3 +1,5 @@
+To ensure the proper functioning of the plugin, it is necessary to update the [C# Levels Ranks Core](https://github.com/ABKAM2023/CS2-LevelsRanks-Core/tree/v1.0) to the latest version.
+
 **[C#] [LR] ExStats Weapons** module collects additional weapon statistics and saves all data in a separate table in the database. You can also configure how much experience will be awarded for kills with specific weapons.
 
 # Installation
@@ -37,6 +39,8 @@
 ```
 
 # RU
+Для корректной работы плагина необходимо обновить [C# Levels Ranks Core](https://github.com/ABKAM2023/CS2-LevelsRanks-Core/tree/v1.0) до последней версии.
+
 **[C#] [LR] ExStats Weapons** модуль собирает дополнительную статистику по оружию и сохраняет все данные в отдельной таблице в базе данных. Также можно настроить, сколько опыта будет начисляться за убийства с определённого оружия.
 
 # Установка
