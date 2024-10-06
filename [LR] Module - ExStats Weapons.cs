@@ -14,7 +14,7 @@ namespace LevelsRanksExStatsWeapons
     public class LevelsRanksExStatsWeapons : BasePlugin
     {
         public override string ModuleName => "[LR] ExStats Weapons";
-        public override string ModuleVersion => "1.0";
+        public override string ModuleVersion => "1.0.1";
         public override string ModuleAuthor => "ABKAM";
         public override string ModuleDescription => "Plugin for tracking weapon kills with fixed experience and custom messages.";
 
@@ -32,23 +32,19 @@ namespace LevelsRanksExStatsWeapons
 
             if (_levelsRanksApi == null)
             {
-                Console.WriteLine("[LR-WEAPONS] LevelsRanksApi is not initialized. Exiting Load method.");
                 return;
             }
-
-            Console.WriteLine("[LR-WEAPONS] LevelsRanksApi initialized successfully.");
+            
             CreateDbTableIfNotExists();
             LoadSettings();
             RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         }
-
         private HookResult OnPlayerDeath(EventPlayerDeath deathEvent, GameEventInfo info)
         {
             try
             {
                 if (!_experienceEnabled)
                 {
-                    Console.WriteLine("[LR-WEAPONS] Experience is disabled.");
                     return HookResult.Continue;
                 }
 
@@ -59,39 +55,37 @@ namespace LevelsRanksExStatsWeapons
                 {
                     return HookResult.Continue;
                 }
-                
+
                 var attackerSteamId64 = ulong.Parse(attacker.SteamID.ToString());
                 var victimSteamId64 = ulong.Parse(victim.SteamID.ToString());
 
                 var attackerSteamId = _levelsRanksApi.ConvertToSteamId(attackerSteamId64);
                 var victimSteamId = _levelsRanksApi.ConvertToSteamId(victimSteamId64);
-                
+
                 if (attacker.IsBot)
                 {
-                    Console.WriteLine($"[LR-WEAPONS] Attacker is a bot, and experience from bots is disabled. No experience awarded.");
                     return HookResult.Continue;
                 }
-                
+
                 if (victim.IsBot && !_levelsRanksApi.GetExperienceFromBots())
                 {
-                    Console.WriteLine($"[LR-WEAPONS] Victim is a bot, and experience from bots is disabled. No experience awarded.");
-                    return HookResult.Continue; 
-                }               
-                Console.WriteLine($"[LRTEST] BOT {_levelsRanksApi.GetExperienceFromBots()}");
+                    return HookResult.Continue;
+                }
+
                 var weapon = deathEvent.Weapon.Trim().ToLower();
-                Console.WriteLine($"[LR-WEAPONS] Weapon raw value: {weapon}");
+
+                if (weapon == "world")
+                {
+                    return HookResult.Continue;
+                }
 
                 if (_weaponsData.TryGetValue($"weapon_{weapon}", out var weaponData))
                 {
                     RewardPlayer(attackerSteamId64, weaponData.Name, weaponData.Exp, weaponData.Color);
                 }
-                else
-                {
-                    Console.WriteLine($"[LR-WEAPONS] No data found for weapon: weapon_{weapon}");
-                }
 
                 var weaponClass = $"weapon_{weapon}";
-                
+
                 Task.Run(() => UpdateWeaponStatsAsync(attackerSteamId, weaponClass));
             }
             catch (Exception ex)
@@ -102,7 +96,6 @@ namespace LevelsRanksExStatsWeapons
             return HookResult.Continue;
         }
 
-
         private void RewardPlayer(ulong steamId64, string name, int xp, string color)
         {
             var steamId = _levelsRanksApi!.ConvertToSteamId(steamId64);
@@ -112,7 +105,6 @@ namespace LevelsRanksExStatsWeapons
             {
                 if (player.Team == CsTeam.Spectator)
                 {
-                    Console.WriteLine($"Player {steamId} is a spectator. No experience awarded.");
                     return;
                 }
 
@@ -164,10 +156,7 @@ namespace LevelsRanksExStatsWeapons
                         SteamID = steamId,
                         WeaponClass = weaponClass
                     };
-
-                    Console.WriteLine($"[LR-WEAPONS] Executing query: {query}");
                     await connection.ExecuteAsync(query, parameters);
-                    Console.WriteLine($"[LR-WEAPONS] Query executed successfully for SteamID: {steamId}, WeaponClass: {weaponClass}");
                 }
             }
             catch (Exception ex)
@@ -179,7 +168,6 @@ namespace LevelsRanksExStatsWeapons
         private void LoadSettings()
         {
             _tableName = _levelsRanksApi?.TableName ?? "lr_weapons";
-            Console.WriteLine($"[LR-WEAPONS] Loaded settings. TableName: {_tableName}");
 
             var configPath = Path.Combine(Application.RootDirectory, "configs/plugins/LevelsRanks/exstats_weapons.json");
 
@@ -196,7 +184,6 @@ namespace LevelsRanksExStatsWeapons
 
                     _experienceEnabled = config.ExperienceEnabled;
                     _weaponsData = config.Weapons;
-                    Console.WriteLine("[LR-WEAPONS] Config loaded successfully.");
                 }
                 catch (Exception ex)
                 {
@@ -205,7 +192,6 @@ namespace LevelsRanksExStatsWeapons
             }
             else
             {
-                Console.WriteLine("[LR-WEAPONS] Config file not found, creating default config.");
                 CreateDefaultConfig(configPath);
             }
         }
@@ -266,7 +252,6 @@ namespace LevelsRanksExStatsWeapons
                     Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                 });
                 File.WriteAllText(configPath, json);
-                Console.WriteLine($"[LR-WEAPONS] Default config created at {configPath}");
             }
             catch (Exception ex)
             {
@@ -295,7 +280,6 @@ namespace LevelsRanksExStatsWeapons
                 using var connection = new MySqlConnection(connectionString);
                 connection.Open();
                 connection.Execute(createTableQuery);
-                Console.WriteLine($"[LR-WEAPONS] Table {tableName} created or already exists.");
             }
             catch (Exception ex)
             {
